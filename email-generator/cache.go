@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/efimbakulin/email-distribution/dao"
+	"html/template"
 	"log"
 )
 
@@ -17,24 +18,24 @@ type CacheKey struct {
 
 var (
 	instance *Cache
-	cache    = make(map[CacheKey]string)
+	cache    = make(map[CacheKey]*template.Template)
 )
 
-func (self *Cache) Get(key CacheKey) (string, error) {
-	if cache[key] != "" {
+func (self *Cache) Get(key CacheKey) (*template.Template, error) {
+	if cache[key] != nil {
 		log.Printf("Found in cache")
 		return cache[key], nil
 	}
-	template, err := self.templatesDao.LoadTemplate(key.TemplateId)
+	tpl, err := self.templatesDao.LoadTemplate(key.TemplateId)
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
-	letter, err := self.lettersDao.LoadLetter(key.LetterId)
+	letter, err := dao.LetterInfo{"Letter body", "Subject"}, nil
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
-	_ = template
-	cache[key] = letter.Body
+	_ = letter
+	cache[key] = template.Must(template.New(string(key.TemplateId)).Parse(tpl))
 
 	return cache[key], nil
 }

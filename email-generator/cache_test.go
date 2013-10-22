@@ -15,7 +15,7 @@ const (
 
 var (
 	testEmails       = []string{"1@mail.ru", "2@mail.ru"}
-	stringBuilder, _ = builder.New(builder.ConnectionStringPg)
+	stringBuilder, _ = connstring.CreateBuilder(connstring.ConnectionStringPg)
 )
 
 func init() {
