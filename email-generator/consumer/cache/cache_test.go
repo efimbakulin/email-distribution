@@ -1,4 +1,4 @@
-package main
+package cache
 
 import (
 	"github.com/efimbakulin/connection-string-builder"
@@ -14,7 +14,6 @@ const (
 )
 
 var (
-	testEmails       = []string{"1@mail.ru", "2@mail.ru"}
 	stringBuilder, _ = connstring.CreateBuilder(connstring.ConnectionStringPg)
 )
 
@@ -26,13 +25,21 @@ func init() {
 	stringBuilder.Dbname(Dbname)
 }
 
-func TestCache(test *testing.T) {
-	theCache := NewCache(stringBuilder.Build())
-	template, err := theCache.Get(CacheKey{1, 2})
+func Test_Templates(test *testing.T) {
+	templates := NewTemplateCache(stringBuilder.Build())
+	template, err := templates.Get(1)
 	if err != nil {
 		test.Fatal(err)
 	}
 	test.Log(template)
-	template, err = theCache.Get(CacheKey{1, 1})
-	template, err = theCache.Get(CacheKey{1, 2})
+}
+
+func Test_Letters(test *testing.T) {
+	letters := NewLetterCache(stringBuilder.Build())
+	letter, err := letters.Get(1)
+	if err != nil {
+		test.Fatal(err)
+	}
+	test.Log(letter.Subj)
+	test.Log(letter.Body)
 }
