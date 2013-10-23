@@ -80,7 +80,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	connBuilder, err := builder.New(builder.ConnectionStringPg)
+	connBuilder, err := connstring.CreateBuilder(connstring.ConnectionStringPg)
 	connBuilder.Address(config.String("database.addr", ""))
 	connBuilder.Port(uint16(config.Int("database.port", 5432)))
 	connBuilder.Username(config.String("database.username", ""))

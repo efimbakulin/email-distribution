@@ -39,7 +39,7 @@ func NewConsumer(config properties.Properties) *Consumer {
 }
 
 func (self *Consumer) Connect() error {
-	connBuilder, err := builder.New(builder.ConnectionStringAmqp)
+	connBuilder, err := connstring.CreateBuilder(connstring.ConnectionStringAmqp)
 	connBuilder.Address(self.config.String("rabbitmq.addr", ""))
 	connBuilder.Port(uint16(self.config.Int("rabbitmq.port", 5672)))
 	connBuilder.Username(self.config.String("rabbitmq.username", ""))
