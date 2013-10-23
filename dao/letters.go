@@ -9,45 +9,39 @@ const (
 	QueryLoadLetter = "select subject, body from delivery.deliveries where delivery_id = @id;"
 )
 
-type LettersDao struct {
+type Letters struct {
 	*BaseDao
 }
 
-type LetterInfo struct {
-	Body string
-	Subj string
-}
-
-func (self *LettersDao) LoadLetter(letter_id int64) (*LetterInfo, error) {
+func (self *Letters) LoadLetter(letter_id int64) (Subject string, Body string, err error) {
 	connection, err := self.getConnection()
 	if err != nil {
-		return nil, err
+		return Subject, Body, err
 	}
 
 	parameter := pgsql.NewParameter("@id", pgsql.Bigint)
 	err = parameter.SetValue(letter_id)
 	recordSet, err := connection.Query(QueryLoadLetter, parameter)
 	if err != nil {
-		return nil, err
+		return Subject, Body, err
 	}
 	defer recordSet.Close()
 	fetched, err := recordSet.FetchNext()
 	if err != nil {
-		return nil, err
+		return Subject, Body, err
 	}
 	if !fetched {
-		return nil, fmt.Errorf("Letter not found")
+		return Subject, Body, fmt.Errorf("Letter not found")
 	}
 
-	result := &LetterInfo{}
-	err = recordSet.Scan(&result.Subj, &result.Body)
+	err = recordSet.Scan(&Subject, &Body)
 	if err != nil {
-		return nil, err
+		return Subject, Body, err
 	}
 
-	return result, nil
+	return Subject, Body, nil
 }
 
-func NewLettersDao(connectionString string) *LettersDao {
-	return &LettersDao{&BaseDao{connectionString}}
+func NewLettersDao(connectionString string) *Letters {
+	return &Letters{&BaseDao{connectionString}}
 }

@@ -16,7 +16,7 @@ import (
 
 var (
 	consumer    *Consumer
-	emailsDao   *dao.EmailsDao
+	emailsDao   *dao.Emails
 	configPath  = flag.String("config", "config.cfg", "path to configuration file")
 	emailRegexp = regexp.MustCompile(RE_BASIC_EMAIL)
 )

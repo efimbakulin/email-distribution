@@ -9,11 +9,11 @@ const (
 	QUERY_LOAD_TEMPLATE_BY_ID = "select body from delivery.templates where template_id = @id;"
 )
 
-type TemplatesDao struct {
+type Templates struct {
 	*BaseDao
 }
 
-func (self *TemplatesDao) LoadTemplate(templateId int64) (string, error) {
+func (self *Templates) LoadTemplate(templateId int64) (string, error) {
 	connection, err := self.getConnection()
 	if err != nil {
 		return "", err
@@ -42,6 +42,6 @@ func (self *TemplatesDao) LoadTemplate(templateId int64) (string, error) {
 	return result, nil
 }
 
-func NewTemplatesDao(connectionString string) *TemplatesDao {
-	return &TemplatesDao{&BaseDao{connectionString}}
+func NewTemplatesDao(connectionString string) *Templates {
+	return &Templates{&BaseDao{connectionString}}
 }

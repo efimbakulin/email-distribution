@@ -9,14 +9,14 @@ const (
 	QueryMarkEmailsInvalid = "select delivery.mark_emails_unused('{%s}'::varchar[])"
 )
 
-type EmailsDao struct {
+type Emails struct {
 	*BaseDao
 }
 
-func (self *EmailsDao) MarkInvalid(emails []string) (int64, error) {
+func (self *Emails) MarkInvalid(emails []string) (int64, error) {
 	return self.executeQuery(fmt.Sprintf(QueryMarkEmailsInvalid, strings.Join(emails, ", ")))
 }
 
-func NewEmailsDao(connectionString string) *EmailsDao {
-	return &EmailsDao{&BaseDao{connectionString}}
+func NewEmailsDao(connectionString string) *Emails {
+	return &Emails{&BaseDao{connectionString}}
 }
