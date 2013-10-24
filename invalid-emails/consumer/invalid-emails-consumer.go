@@ -7,6 +7,7 @@ import (
 	"github.com/efimbakulin/connection-string-builder"
 	"github.com/efimbakulin/email-distribution/dao"
 	"log"
+	"log/syslog"
 	"os"
 	"os/signal"
 	"regexp"
@@ -86,12 +87,19 @@ func main() {
 	connBuilder.Username(config.String("database.username", ""))
 	connBuilder.Password(config.String("database.password", ""))
 	connBuilder.Dbname(config.String("database.dbname", ""))
-	log.Print(connBuilder.Build())
+
 	emailsDao = dao.NewEmailsDao(connBuilder.Build())
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	w, err := syslog.New(syslog.LOG_INFO, "invalid-emails-consumer")
+	if err != nil {
+		log.Fatalf("connecting to syslog: %s", err)
+	}
+
+	log.SetOutput(w)
 
 	consumer = NewConsumer(config)
 	err = consumer.Connect()
@@ -99,6 +107,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Print("Started")
 	consumer.Serve(Handler, SkipMessageOnError)
 
 	go func() {

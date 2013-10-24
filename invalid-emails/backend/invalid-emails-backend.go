@@ -8,11 +8,11 @@ import (
 	"github.com/gorilla/mux"
 	"io"
 	"log"
+	"log/syslog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	//"time"
 )
 
 const (
@@ -76,6 +76,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	w, err := syslog.New(syslog.LOG_INFO, "invalid-emails-backend")
+	if err != nil {
+		log.Fatalf("connecting to syslog: %s", err)
+	}
+	log.SetOutput(w)
+
 	producer = NewProducer(config)
 
 	if err = producer.Connect(); err != nil {
@@ -83,6 +89,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
+	log.Printf("listening on %s", config.String("listen.path", DefaultListenPath))
 	router.HandleFunc(config.String("listen.path", DefaultListenPath), HandleRequest).
 		Methods("POST")
 
