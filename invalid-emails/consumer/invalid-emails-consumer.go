@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"github.com/dmotylev/goproperties"
 	"github.com/efimbakulin/connection-string-builder"
 	"github.com/efimbakulin/email-distribution/dao"
@@ -16,14 +17,18 @@ import (
 )
 
 var (
-	consumer    *Consumer
-	emailsDao   *dao.Emails
-	configPath  = flag.String("config", "config.cfg", "path to configuration file")
-	emailRegexp = regexp.MustCompile(RE_BASIC_EMAIL)
+	consumer        *Consumer
+	emailsDao       *dao.Emails
+	configPath      = flag.String("config", "", "path to configuration file")
+	showVersion     = flag.Bool("version", false, "show application version and exit")
+	showHelp        = flag.Bool("help", false, "show help")
+	emailRegexp     = regexp.MustCompile(EmailRegexp)
+	version         string
+	applicationName string
 )
 
 const (
-	RE_BASIC_EMAIL = `(?i)[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+[A-Z]{2,6}`
+	EmailRegexp = `(?i)[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+[A-Z]{2,6}`
 )
 
 type FilterFunc func(string) bool
@@ -71,10 +76,41 @@ func Handler(data []byte) error {
 	return nil
 }
 
+func usage() {
+	fmt.Printf("%s parameters:\n", applicationName)
+	fmt.Println("\t--config=XXX\t - specify path to config file (required)")
+	fmt.Println("\t--help\t\t - show this message")
+	fmt.Println("\t--version\t - show application version and exit")
+}
+
+func checkArgs() {
+	if *showVersion {
+		fmt.Printf("%s version %s\n", applicationName, version)
+		os.Exit(0)
+	}
+	if *showHelp {
+		usage()
+		os.Exit(0)
+	}
+	if *configPath == "" {
+		usage()
+		log.Fatal("Please specify path to configuration file")
+	}
+}
+
 func main() {
 	flag.Parse()
 
-	var err error
+	w, err := syslog.New(syslog.LOG_INFO, applicationName)
+	if err != nil {
+		log.Fatalf("connecting to syslog: %s", err)
+	}
+
+	log.SetOutput(w)
+	log.SetFlags(0)
+
+	checkArgs()
+
 	config, err := properties.Load(*configPath)
 
 	if err != nil {
@@ -94,20 +130,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	w, err := syslog.New(syslog.LOG_INFO, "invalid-emails-consumer")
-	if err != nil {
-		log.Fatalf("connecting to syslog: %s", err)
-	}
-
-	log.SetOutput(w)
-
 	consumer = NewConsumer(config)
 	err = consumer.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Print("Started")
+	log.Printf("Started [version %s]", version)
 	consumer.Serve(Handler, SkipMessageOnError)
 
 	go func() {
