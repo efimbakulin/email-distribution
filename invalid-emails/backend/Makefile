@@ -1,4 +1,4 @@
-VERSION=0.1
+VERSION=$(shell cat version)
 DEB_SOURCES=$(shell find dist/debian -type f)
 ARCH=amd64
 
