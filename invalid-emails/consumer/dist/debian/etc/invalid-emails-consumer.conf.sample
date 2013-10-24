@@ -1,0 +1,15 @@
+rabbitmq.addr=localhost
+rabbitmq.port=5672
+rabbitmq.username=mailworker
+rabbitmq.password=pwd
+rabbitmq.exchange.name=heavens.emails
+rabbitmq.queue.name=emails.invalid
+
+#if to send acknowledgement after message is processed. Default is true
+rabbitmq.acknowledge_message=true
+
+database.addr = localhost
+database.port = 56432
+database.username = user
+database.password = pwd
+database.dbname = db_name

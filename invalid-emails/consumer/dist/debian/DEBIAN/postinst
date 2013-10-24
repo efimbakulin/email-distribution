@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" != "configure" ]; then
+    exit 0
+fi
+
+if [ -x "/etc/init.d/heavens-statd" ]; then
+    if [ -f "/var/run/heavens-statd.pid" ] && kill -0 `cat /var/run/heavens-statd.pid` >/dev/null; then
+        /etc/init.d/heavens-statd stop || true
+    else
+        update-rc.d heavens-statd defaults >/dev/null
+        if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+            invoke-rc.d heavens-statd start || true
+        else
+            /etc/init.d/heavens-statd start || true
+        fi
+    fi
+fi

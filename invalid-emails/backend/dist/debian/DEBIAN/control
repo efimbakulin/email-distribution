@@ -1,0 +1,9 @@
+Package: invalid-emails-backend
+Version: 0.1
+Section: misc
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.10), lsb-base
+Maintainer: Efim Bakulin <efimbakulin@2reallife.com>
+Description: Invalid emails processing backend
+	Provides http access to service registering invalid emails

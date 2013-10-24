@@ -1,0 +1,10 @@
+Package: invalid-emails-consumer
+Version: 0.1
+Section: misc
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.10), lsb-base
+Maintainer: Efim Bakulin <efimbakulin@2reallife.com>
+Description: invalid emails processing consumer
+	Implements invalid emails processing
+	
