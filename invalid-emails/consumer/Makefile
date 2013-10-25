@@ -7,12 +7,13 @@ GOFLAGS=-ldflags "-X main.version $(VERSION) -X main.applicationName $(APPNAME)"
 deb: $(APPNAME)_$(VERSION)_$(ARCH).deb
 
 clean:
-	rm -r debian $(APPNAME)_$(VERSION)_$(ARCH).deb $(APPNAME)
+	rm -rf debian $(APPNAME)_$(VERSION)_$(ARCH).deb $(APPNAME)
 
 $(APPNAME)_$(VERSION)_$(ARCH).deb: $(APPNAME) $(DEB_SOURCES) Makefile
-	# check invalid-emails-backend.git is x86-64
+	# check $(APPNAME) is x86-64
+#	file -b $(APPNAME) | grep -e "^ELF 64-bit LSB executable, x86-64, version 1 (SYSV)"
+	file -b $(APPNAME) | grep -e "^ELF 64-bit LSB\s*executable, x86-64, version 1 (SYSV)"
 	sed s/Version\:.*$$/Version\:\ $(VERSION)/g dist\/debian\/DEBIAN\/control -i
-	file -b $(APPNAME) | grep -e "^ELF 64-bit LSB executable, x86-64, version 1 (SYSV)"
 	rm -fr debian
 	cp -pR dist/debian debian
 	mkdir -p debian/usr/bin
