@@ -15,11 +15,10 @@ type MessageHandler func([]byte) error
 type ErrorHandler func(tag uint64, consumer *Consumer) error
 
 type Consumer struct {
-	config  properties.Properties
-	conn    *amqp.Connection
-	ch      *amqp.Channel
-	errChan ErrorChannel
-	okChan  OkChannel
+	config properties.Properties
+	conn   *amqp.Connection
+	ch     *amqp.Channel
+	done   chan bool
 }
 
 func RequeueMessageOnError(tag uint64, consumer *Consumer) error {
@@ -32,9 +31,8 @@ func SkipMessageOnError(tag uint64, consumer *Consumer) error {
 
 func NewConsumer(config properties.Properties) *Consumer {
 	return &Consumer{
-		config:  config,
-		errChan: make(ErrorChannel),
-		okChan:  make(OkChannel),
+		config: config,
+		done: make(chan bool),
 	}
 }
 
@@ -66,7 +64,7 @@ func (self *Consumer) Connect() error {
 	return nil
 }
 
-func (self *Consumer) Serve(functor MessageHandler, errorHandler ErrorHandler) error {
+func (self *Consumer) Serve(messageHandler MessageHandler, errorHandler ErrorHandler) error {
 	deliveries, err := self.ch.Consume(
 		self.config.String("rabbitmq.queue.name", ""), // name
 		"",    // consumerTag,
@@ -80,25 +78,33 @@ func (self *Consumer) Serve(functor MessageHandler, errorHandler ErrorHandler) e
 		return fmt.Errorf("Queue Consume: %s", err)
 	}
 
+	errChan := make(ErrorChannel)
+	okChan := make(OkChannel)
 	go func() {
-		for tag := range self.errChan {
-			errorHandler(tag, self)
+		var tag uint64
+		select {
+		case tag = <-errChan:
+			{
+				errorHandler(tag, self)
+			}
+		case tag = <-okChan:
+			{
+				self.ch.Ack(tag, false)
+			}
 		}
 	}()
 
 	go func() {
-		for tag := range self.okChan {
-			self.ch.Ack(tag, false)
+		for d := range deliveries {
+			if err := messageHandler(d.Body); err != nil {
+				errChan <- d.DeliveryTag
+				continue
+			}
+			okChan <- d.DeliveryTag
 		}
+		log.Printf("handle: deliveries channel closed")
+		self.done <- true
 	}()
-
-	go handle(
-		deliveries,
-		functor,
-		self.okChan,
-		self.errChan,
-	)
-
 	return nil
 }
 
@@ -109,21 +115,6 @@ func (self *Consumer) Stop() error {
 	if self.conn != nil {
 		self.conn.Close()
 	}
+	<-self.done
 	return nil
-}
-
-func handle(
-	deliveries <-chan amqp.Delivery,
-	messageHandler MessageHandler,
-	okChan OkChannel,
-	errChan ErrorChannel,
-) {
-	for d := range deliveries {
-		if err := messageHandler(d.Body); err != nil {
-			errChan <- d.DeliveryTag
-			continue
-		}
-		okChan <- d.DeliveryTag
-	}
-	log.Printf("handle: deliveries channel closed")
 }
