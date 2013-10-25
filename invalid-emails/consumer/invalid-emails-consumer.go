@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/dmotylev/goproperties"
 	"github.com/efimbakulin/connection-string-builder"
-	"github.com/efimbakulin/email-distribution/dao"
+	"git.2reallife.net/heavens/email-distribution.git/dao"
 	"log"
 	"log/syslog"
 	"os"
