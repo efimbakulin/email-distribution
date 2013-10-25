@@ -30,12 +30,8 @@ func dialExchange(srv string) (*smtp.Client, error) {
 	return conn, nil
 }
 
-func sendMail(subj string, body string, from string, fromName string, to string) error {
-	// Set up authentication information.
-
-	smtpServer := "mail.ocplay.net:25"
-
-	conn, err := dialExchange(smtpServer)
+func sendMail(server string, subj string, body string, from string, fromName string, to string) error {
+	conn, err := dialExchange(server)
 
 	if err != nil {
 		return err

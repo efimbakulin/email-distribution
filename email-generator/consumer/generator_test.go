@@ -21,6 +21,10 @@ var (
 	stringBuilder, _ = connstring.CreateBuilder(connstring.ConnectionStringPg)
 )
 
+const (
+	exchangeAddr = "mail.ocplay.net:25"
+)
+
 func init() {
 	stringBuilder.Address(Addr)
 	stringBuilder.Port(Port)
@@ -43,7 +47,7 @@ func BenchmarkGeneration(test *testing.B) {
 	message := generateLetter(template, letter.Body, "test@mail.ru", 1111111)
 	_ = message
 
-	err = sendMail(letter.Subj, message, "informer-noreply@nebogame.com", "Гильдия магов", "e.v.bakulin@gmail.com")
+	err = sendMail(exchangeAddr, letter.Subj, message, "informer-noreply@nebogame.com", "Гильдия магов", "e.v.bakulin@gmail.com")
 	if err != nil {
 		test.Fatal(err)
 	}

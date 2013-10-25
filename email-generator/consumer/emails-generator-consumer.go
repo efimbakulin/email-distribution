@@ -3,13 +3,16 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/dmotylev/goproperties"
 	"github.com/efimbakulin/connection-string-builder"
+	"github.com/efimbakulin/email-distribution/dao"
 	"github.com/efimbakulin/email-distribution/email-generator/consumer/cache"
 	"io"
 	"log"
+	"log/syslog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,10 +20,13 @@ import (
 )
 
 var (
-	configPath = flag.String("config", "config.sample", "path to configuration file")
-	letters    *cache.Letters
-	templates  *cache.Templates
-	config     properties.Properties
+	consumer        *Consumer
+	configPath      = flag.String("config", "config.sample", "path to configuration file")
+	letters         *cache.Letters
+	templates       *cache.Templates
+	emails          *dao.Emails
+	config          properties.Properties
+	applicationName string
 )
 
 func calcMd5(val string) string {
@@ -52,10 +58,53 @@ func generateLetter(tpl *template.Template, body string, email string, emailId i
 	return result.String()
 }
 
+func startConsumer() error {
+	consumer = NewConsumer(config)
+	err := consumer.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print("Rabbitmq listener started")
+	go consumer.Serve(AmqpHandler, SkipMessageOnError)
+	return nil
+}
+
+type IncomeMessage struct {
+	Body     string
+	To       string
+	From     string
+	FromName string
+	Language string
+}
+
+func AmqpHandler(data []byte) error {
+	log.Print("New data got")
+	var js IncomeMessage
+	if err := json.Unmarshal(data, &js); err != nil {
+		log.Printf("%s", err)
+		return err
+	}
+	id, err := emails.GetId(js.To)
+	if err != nil {
+		log.Printf("%s", err)
+		return err
+	}
+	_ = id
+	log.Printf("%s", js)
+	return fmt.Errorf("Not ready yet")
+}
+
 func main() {
 	flag.Parse()
 
-	var err error
+	w, err := syslog.New(syslog.LOG_INFO, applicationName)
+	if err != nil {
+		log.Fatalf("connecting to syslog: %s", err)
+	}
+
+	log.SetOutput(w)
+	log.SetFlags(0)
+
 	config, err = properties.Load(*configPath)
 
 	if err != nil {
@@ -71,6 +120,11 @@ func main() {
 
 	templates = cache.NewTemplateCache(connBuilder.Build())
 	letters = cache.NewLetterCache(connBuilder.Build())
+	emails = dao.NewEmailsDao(connBuilder.Build())
+
+	if err = startConsumer(); err != nil {
+		log.Fatal(err)
+	}
 
 	stopSig := make(chan os.Signal, 1)
 	signal.Notify(stopSig, syscall.SIGTERM, syscall.SIGINT)

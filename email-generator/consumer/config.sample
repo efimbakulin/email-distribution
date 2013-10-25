@@ -3,7 +3,7 @@ rabbitmq.port=5672
 rabbitmq.username=mailworker
 rabbitmq.password=123
 rabbitmq.exchange.name=heavens.emails
-rabbitmq.queue.name=emails.invalid
+rabbitmq.queue.name=emails.generation
 
 
 database.addr = localhost

@@ -13,6 +13,10 @@ type Templates struct {
 	*BaseDao
 }
 
+func (self *Templates) LoadByLang(lang string) (string, error) {
+	return "{{.Body}}{{.UnsubscribeLink}}", nil
+}
+
 func (self *Templates) LoadTemplate(templateId int64) (string, error) {
 	connection, err := self.getConnection()
 	if err != nil {
