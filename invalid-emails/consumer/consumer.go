@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dmotylev/goproperties"
-	"github.com/efimbakulin/connection-string-builder"
+	"github.com/fimston/connection-string-builder"
 	"github.com/streadway/amqp"
 	"log"
 )
