@@ -9,9 +9,11 @@ import (
 	"io"
 	"log"
 	"log/syslog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -33,6 +35,7 @@ var (
 	showHelp        = flag.Bool("help", false, "show help")
 	version         string
 	applicationName string
+	wg              sync.WaitGroup
 )
 
 func calcMd5(val string) string {
@@ -46,7 +49,8 @@ func isRequestValid(data, hash, salt, secret string) bool {
 }
 
 func HandleRequest(w http.ResponseWriter, req *http.Request) {
-
+	wg.Add(1)
+	defer wg.Done()
 	w.Header().Set("Content-type", "text/html")
 	data := req.FormValue("data")
 
@@ -95,7 +99,7 @@ func checkArgs() {
 func main() {
 	flag.Parse()
 
-	w, err := syslog.New(syslog.LOG_INFO, "invalid-emails-backend")
+	w, err := syslog.New(syslog.LOG_INFO, applicationName)
 	if err != nil {
 		log.Fatalf("connecting to syslog: %s", err)
 	}
@@ -109,6 +113,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	listener, err := net.Listen("tcp", config.String("listen.addr", ""))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	producer = NewProducer(config)
 
 	if err = producer.Connect(); err != nil {
@@ -116,7 +125,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	log.Printf("listening on %s", config.String("listen.path", DefaultListenPath))
+	log.Printf("listening on %s%s", config.String("listen.addr", ""), config.String("listen.path", DefaultListenPath))
 	router.HandleFunc(config.String("listen.path", DefaultListenPath), HandleRequest).
 		Methods("POST")
 
@@ -126,12 +135,15 @@ func main() {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		s := <-sig
-		producer.Stop()
+		listener.Close()
 		log.Printf("Got %s - exiting", s)
-		os.Exit(1)
 	}()
 
-	if err = http.ListenAndServe(config.String("listen.addr", ""), nil); err != nil {
-		log.Fatal(err)
+	if err = http.Serve(listener, nil); err != nil {
+		log.Print(err)
 	}
+	producer.Stop()
+	log.Print("Waiting active requests for being finished")
+	wg.Wait()
+	log.Print("Exited")
 }

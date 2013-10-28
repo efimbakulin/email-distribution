@@ -21,21 +21,25 @@ type Consumer struct {
 	done   chan bool
 }
 
+//Implements requeue policy of failed message processing
 func RequeueMessageOnError(tag uint64, consumer *Consumer) error {
 	return consumer.ch.Nack(tag, false, true)
 }
 
+//Implements skip policy of failed message processing
 func SkipMessageOnError(tag uint64, consumer *Consumer) error {
 	return nil
 }
 
+//Creates new instance of Consumer
 func NewConsumer(config properties.Properties) *Consumer {
 	return &Consumer{
 		config: config,
-		done: make(chan bool),
+		done:   make(chan bool),
 	}
 }
 
+//Establishes connection with AMQP-server
 func (self *Consumer) Connect() error {
 	connBuilder, err := connstring.CreateBuilder(connstring.ConnectionStringAmqp)
 	connBuilder.Address(self.config.String("rabbitmq.addr", ""))
@@ -64,6 +68,7 @@ func (self *Consumer) Connect() error {
 	return nil
 }
 
+//Runs message processing loop in non-blocking mode
 func (self *Consumer) Serve(messageHandler MessageHandler, errorHandler ErrorHandler) error {
 	deliveries, err := self.ch.Consume(
 		self.config.String("rabbitmq.queue.name", ""), // name
@@ -108,6 +113,8 @@ func (self *Consumer) Serve(messageHandler MessageHandler, errorHandler ErrorHan
 	return nil
 }
 
+//Stops message processing loop.
+//Blocks the caller untill the connection to AMQP is not stopped properly
 func (self *Consumer) Stop() error {
 	if self.ch != nil {
 		self.ch.Close()
