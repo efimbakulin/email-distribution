@@ -142,8 +142,8 @@ func main() {
 	if err = http.Serve(listener, nil); err != nil {
 		log.Print(err)
 	}
-	producer.Stop()
 	log.Print("Waiting active requests for being finished")
 	wg.Wait()
+	producer.Stop()
 	log.Print("Exited")
 }
